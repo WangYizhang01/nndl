@@ -8,8 +8,8 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 
-# device = "cuda:3" if torch.cuda.is_available() else "cpu"
-device = "cpu"
+device = "cuda:3" if torch.cuda.is_available() else "cpu"
+# device = "cpu"
 print(f"Using {device} device")
 
 trainDataset = torchvision.datasets.MNIST(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
@@ -234,6 +234,42 @@ class LeNet(nn.Module):
         return y
 
 
+class LeNet_improved(nn.Module):
+    def __init__(self):
+        super(LeNet_improved, self).__init__()
+        self.C1 = nn.Conv2d(1, 6, kernel_size=(5, 5))
+        self.S2 = nn.AvgPool2d(kernel_size=2)
+        self.r1 = nn.ReLU()
+        self.C3 = nn.Conv2d(6, 16, kernel_size=(5, 5)) # 未使用连接表
+        self.S4 = nn.AvgPool2d(kernel_size=2)
+        self.r2 = nn.ReLU()
+        self.C5 = nn.Conv2d(16, 120, kernel_size=(4, 4)) # mnist数据集为28*28，故需将kernel_size设置成4*4
+        self.r3 = nn.ReLU()
+        self.F6 = nn.Linear(120, 84)
+        self.r4 = nn.ReLU()
+        self.F7 = nn.Linear(84, 10)
+        # self.model_list = nn.ModuleList([self.C1, self.S2, self.C3, self.S4, self.C5, self.F6, self.output])
+    
+    def forward(self, x):
+        # for layer in self.model_list:
+        #     x = layer(x)
+        x = self.C1(x)
+        x = self.S2(x)
+        x = self.r1(x)
+        x = self.C3(x)
+        x = self.S4(x)
+        x = self.r2(x)
+        x = self.C5(x)
+        x = self.r3(x)
+        x = x.reshape(-1, 120)
+        x = self.F6(x)
+        x = self.r4(x)
+        x = self.F7(x)
+        y = nn.Softmax(dim=1)(x)
+        # y = torch.argmax(y, dim=1)
+        return y
+
+
 class LeNet_withConnectedTable(nn.Module):
     def __init__(self):
         super(LeNet_withConnectedTable, self).__init__()
@@ -258,9 +294,10 @@ class LeNet_withConnectedTable(nn.Module):
         return y
 
 
-lr, epochs = 1e-4, 10
+lr, epochs = 2e-3, 15
 # lenet = LeNet()
-lenet = LeNet_withConnectedTable()
+lenet = LeNet_improved()
+# lenet = LeNet_withConnectedTable()
 lenet.to(device)
 loss_fn = nn.CrossEntropyLoss()
 optim = torch.optim.Adam(lenet.parameters(), lr=lr)
@@ -279,8 +316,8 @@ def train(epochs, net, dataloader, optim, loss_fn):
             optim.zero_grad()
             loss.backward()
             optim.step()
-            if batch % 100 == 0:
-                print(f'epoch {i} iter {batch} compeleted!')
+            # if batch % 100 == 0:
+            #     print(f'epoch {i} iter {batch} compeleted!')
         print('epoch %d: loss: %.6f' % (i, epoch_loss / len(dataloader)))
 
 def test(net, dataloader, loss_fn):
@@ -300,4 +337,4 @@ def test(net, dataloader, loss_fn):
 if __name__ == '__main__':
     train(epochs, lenet, trainDataloader, optim, loss_fn)
     test(lenet, testDataloader, loss_fn)
-    torch.save(lenet.state_dict(), './pretrained_models/LeNet.pt')
+    torch.save(lenet.state_dict(), './pretrained_models/LeNet-5.pt')
