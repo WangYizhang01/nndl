@@ -184,7 +184,7 @@ class BatchConv2D_(nn.Module):
         assert X.shape[0] == self.in_channels
         assert len(self.connect_nums_list) == self.out_channels
         output = torch.tensor([])
-        names = self.__dict__
+        names = self.state_dict()
         for i in range(self.out_channels):
             start_index = 0
             cur_output = torch.tensor([])
@@ -300,3 +300,4 @@ def test(net, dataloader, loss_fn):
 if __name__ == '__main__':
     train(epochs, lenet, trainDataloader, optim, loss_fn)
     test(lenet, testDataloader, loss_fn)
+    torch.save(lenet.state_dict(), './pretrained_models/LeNet.pt')
